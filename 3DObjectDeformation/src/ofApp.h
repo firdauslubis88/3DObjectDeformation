@@ -1,6 +1,8 @@
 #pragma once
 
 #include "ofMain.h"
+#include "ofxAssimpModelLoader.h"
+#include "GreenCoordinate.h"
 
 class ofApp : public ofBaseApp{
 
@@ -20,8 +22,28 @@ class ofApp : public ofBaseApp{
 		void windowResized(int w, int h);
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
-		
-		ofMesh mesh;
+		void mouseScrolled(int x, int y, float scrollX, float scrollY);
+
+		void save(string name);
+		void checkCage();
+
+		void checkCageParts();
+
+		ofMesh mesh, tempCageMesh, testCageMesh, testMesh;
 		ofImage image;
 		ofEasyCam easyCam;
+
+		ofxAssimpModelLoader model;
+		ofxAssimpModelLoader cage;
+		ofxAssimpModelLoader testCage;
+
+		bool toggleShowWire = false, toggleLock = true;
+		ofBoxPrimitive box;
+		float xBox, yBox, zBox;
+		float xSize, ySize;
+
+		ofFile cageParts, modelParts;
+
+		GreenCoordinate GC;
+		vector<ofPolyline> polyLines, normalFaceLines;
 };
