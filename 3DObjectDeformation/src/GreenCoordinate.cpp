@@ -151,3 +151,4 @@ void GreenCoordinate::initModel(ofMesh modelMesh)
 //		cout << "Model Vertex Number inside hand cage:\t" << tempModelVertices.size() << endl;
 	}
 }
+
