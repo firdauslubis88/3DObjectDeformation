@@ -11,6 +11,11 @@ public:
 	void initCage(ofMesh mesh);
 	void cagePartsInit(string partName);
 	void initModel(ofMesh mesh);
+	void computeGreenCoordinate();
+	double GCTriInt(ofVec3f p, ofVec3f v1, ofVec3f v2, ofVec3f e);
+	void initVerticesPhiMap();
+	void initFacesPsiMap();
+	void deform();
 
 	vector<ofMeshFace> meshFaces;
 	vector<ofPoint> meshFacesNormal;
@@ -18,6 +23,10 @@ public:
 	int numMeshFaces;
 	vector<string> partsName;
 	std::map<string,vector<std::pair<ofMeshFace, ofPoint>>> cagePartsVerticesMap;
+	std::map<string, vector<std::pair<ofMeshFace, ofPoint>>> originalCagePartsVerticesMap;
 	std::map<string, vector<ofPoint>> modelPartsVerticesMap;
+	std::map<string, std::vector<std::vector<pair<ofVec3f, double>>>> cagePartsVectorVerticesPhiMap;
+	std::map<string, std::vector<std::vector<pair<ofMeshFace, double>>>> cagePartsVectorFacesPsiMap;
+	float s[3] = { 1,1,1 };
 };
 

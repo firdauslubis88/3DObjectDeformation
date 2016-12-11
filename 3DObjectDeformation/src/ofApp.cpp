@@ -9,6 +9,7 @@ void ofApp::setup(){
 
 	GC.initCage(cage.getMesh(0));
 	GC.initModel(model.getMesh(0));
+	GC.computeGreenCoordinate();
 
 	testMesh.setMode(OF_PRIMITIVE_POINTS);
 	auto testMapResult = GC.modelPartsVerticesMap.find("cage finger");
