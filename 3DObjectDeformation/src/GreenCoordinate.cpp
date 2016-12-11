@@ -135,7 +135,17 @@ void GreenCoordinate::initModel(ofMesh modelMesh)
 			for (size_t k = 0; k < meshFacesAndNormalPair.size(); k++)
 			{
 				ofVec3f facePoint = meshFacesAndNormalPair[k].first.getVertex(0);
-				ofVec3f faceNormal = meshFacesAndNormalPair[k].second;
+				ofVec3f a = meshFacesAndNormalPair[k].first.getVertex(0);
+				ofVec3f b = meshFacesAndNormalPair[k].first.getVertex(1);
+				ofVec3f c = meshFacesAndNormalPair[k].first.getVertex(2);
+				ofVec3f ba = b - a;
+				ofVec3f ca = c - a;
+				ofVec3f d = ba.getCrossed(ca);
+				ofVec3f faceNormal = d.normalize();
+				if (k == 1)
+				{
+					faceNormal = -faceNormal;
+				}
 				decision = !Util::upperLowerPlaneTest(testPoint, faceNormal, facePoint);
 				if (!decision)
 				{
@@ -148,10 +158,16 @@ void GreenCoordinate::initModel(ofMesh modelMesh)
 //				cout << testPoint << endl;
 			}
 		}
+		for (size_t i = 0; i < 12; i++)
+		{
+//			cout << meshFacesAndNormalPair[i].first.getVertex(0) << endl;
+//			cout << meshFacesAndNormalPair[i].first.getVertex(1) << endl;
+//			cout << meshFacesAndNormalPair[i].first.getVertex(2) << endl;
+		}
 		modelPartsVerticesMap.insert(pair<string, vector<ofPoint>>(partsName[i], tempModelVertices));
 		initVerticesPhiMap();
 		initFacesPsiMap();
-//		cout << "Model Vertex Number inside hand cage:\t" << tempModelVertices.size() << endl;
+		cout << "Model Vertex Number inside hand cage:\t" << tempModelVertices.size() << endl;
 	}
 }
 
@@ -357,8 +373,8 @@ void GreenCoordinate::computeGreenCoordinate()
 				estimate += tempFacesPsiMap[face].second*n;
 			}
 			estimate /= checkPhi;
-			cout << "model vertex-" << e << ":\t" << modelVertex << endl;
-			cout << "estimate vertex-" << e << ":\t" << estimate << endl;
+//			cout << "model vertex-" << e << ":\t" << modelVertex << endl;
+//			cout << "estimate vertex-" << e << ":\t" << estimate << endl;
 //				cout << checkPhi << endl;
 //				cout << e << ":\t" << modelVertex.distance(estimate) << endl;
 //			}
@@ -549,11 +565,16 @@ void GreenCoordinate::deform()
 				estimate += tempFacesPsiMap[face].second*n;
 			}
 			estimate /= checkPhi;
-			cout << "model vertex-" << e << ":\t" << modelVertex << endl;
-			cout << "estimate vertex-" << e << ":\t" << estimate << endl;
+//			cout << "model vertex-" << e << ":\t" << modelVertex << endl;
+//			cout << "estimate vertex-" << e << ":\t" << estimate << endl;
 			//				cout << checkPhi << endl;
 			//				cout << e << ":\t" << modelVertex.distance(estimate) << endl;
 			//			}
 		}
 	}
+}
+
+double * GreenCoordinate::computeGreenCoordinate(ofVec3f inputModelVertex, ofVec3f * inputCageVertices, ofMeshFace * inputCageFaces)
+{
+	return nullptr;
 }

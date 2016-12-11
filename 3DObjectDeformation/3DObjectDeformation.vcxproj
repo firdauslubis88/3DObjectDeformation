@@ -196,6 +196,7 @@
     <ClCompile Include="..\..\of_v0.9.8_vs_release\addons\ofxGui\src\ofxToggle.cpp" />
     <ClCompile Include="src\GreenCoordinate.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\Object_3D.cpp" />
     <ClCompile Include="src\ofApp.cpp" />
     <ClCompile Include="src\Util.cpp" />
   </ItemGroup>
@@ -251,6 +252,7 @@
     <ClInclude Include="..\..\of_v0.9.8_vs_release\addons\ofxGui\src\ofxSliderGroup.h" />
     <ClInclude Include="..\..\of_v0.9.8_vs_release\addons\ofxGui\src\ofxToggle.h" />
     <ClInclude Include="src\GreenCoordinate.h" />
+    <ClInclude Include="src\Object_3D.h" />
     <ClInclude Include="src\ofApp.h" />
     <ClInclude Include="src\Util.h" />
   </ItemGroup>

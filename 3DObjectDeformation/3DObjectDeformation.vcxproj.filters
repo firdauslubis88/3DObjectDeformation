@@ -49,6 +49,9 @@
     <ClCompile Include="src\Util.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\Object_3D.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -243,6 +246,9 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\Util.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Object_3D.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
