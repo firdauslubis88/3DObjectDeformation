@@ -234,150 +234,83 @@ void GreenCoordinate::initFacesPsiMap()
 	}
 }
 
-void GreenCoordinate::computeGreenCoordinate()
+void GreenCoordinate::computeGreenCoordinate(ofVec3f inputModelVertex, ofMeshFace* inputCageFaces, ofVec3f* inputCageVertices, double* inputPsi, double* inputPhi, double* inputS, int inputCageFacesNum, int inputCageVerticesNum)
 {
-	int testI = 0;
-	for (size_t i = 0; i < partsName.size(); i++)
+	for (size_t j = 0; j < inputCageFacesNum; j++)
 	{
-		vector<pair<ofMeshFace, ofPoint>>meshFacesAndNormalPair = cagePartsVerticesMap.find(partsName[i])->second;
-		vector<ofPoint>modelVertices = modelPartsVerticesMap.find(partsName[i])->second;
-		std::vector<std::vector<pair<ofVec3f, double>>>& vectorVerticesPhiMap = cagePartsVectorVerticesPhiMap.find(partsName[i])->second;
-		std::vector<std::vector<pair<ofMeshFace, double>>>& vectorFacesPsiMap = cagePartsVectorFacesPsiMap.find(partsName[i])->second;
-//		cout << modelVertices.size() << endl;
-		for (size_t e = 0; e < modelVertices.size(); e++)
+		double* phi[3];
+		double* psi;
+
+		ofMeshFace meshFace = inputCageFaces[j];
+		ofVec3f a = meshFace.getVertex(0);
+		ofVec3f b = meshFace.getVertex(1);
+		ofVec3f c = meshFace.getVertex(2);
+		ofVec3f ba = b - a;
+		ofVec3f ca = c - a;
+		ofVec3f d = ba.getCrossed(ca);
+		ofVec3f n = d.normalize();
+		//Preparing phi
+		for (size_t l = 0; l < 3; l++)
 		{
-			ofVec3f modelVertex = modelVertices[e]; //meshFacesAndNormalPair[0].first.getVertex(0);//
-			ofVec3f estimate = ofVec3f(0, 0, 0);
-			double* phi[3];
-			vector<pair<ofVec3f, double>>& tempVerticesPhiMap = vectorVerticesPhiMap[e];
-			vector<pair<ofMeshFace, double>>& tempFacesPsiMap = vectorFacesPsiMap[e];
-			for (size_t j = 0; j < meshFacesAndNormalPair.size(); j++)
+			ofVec3f cageVertex = meshFace.getVertex(l);
+			for (size_t it = 0; it < inputCageVerticesNum; it++)
 			{
-				double* psi;
-				ofMeshFace meshFace = meshFacesAndNormalPair[j].first;
-				ofVec3f n = meshFacesAndNormalPair[j].second;
-				//Preparing phi
-				for (size_t l = 0; l < 3; l++)
+				ofVec3f mapVertex = inputCageVertices[it];
+				if (mapVertex.distance(cageVertex) < 0.00001)
 				{
-					ofVec3f cageVertex = meshFace.getVertex(l);
-					for (size_t it = 0; it < tempVerticesPhiMap.size(); it++)
-					{
-						ofVec3f mapVertex = tempVerticesPhiMap[it].first;
-						if (mapVertex.distance(cageVertex) < 0.00001)
-						{
-							phi[l] = &tempVerticesPhiMap[it].second;
-//							cout << cageVertex << endl;
-//							cout << *phi[l] << endl;
-							break;
-						}
-					}
+					phi[l] = &inputPhi[it];
+					break;
 				}
-				//Preparing psi
-				for (size_t it = 0; it < tempFacesPsiMap.size(); it++)
-				{
-					ofMeshFace mapFace = tempFacesPsiMap[it].first;
-					if (mapFace.getVertex(0).distance(meshFace.getVertex(0)) < 0.00001 && mapFace.getVertex(1).distance(meshFace.getVertex(1)) < 0.00001 && mapFace.getVertex(2).distance(meshFace.getVertex(2)) < 0.00001)
-					{
-						psi = &tempFacesPsiMap[it].second;
-						break;
-					}
-				}
+			}
+		}
+		//Preparing psi
+		psi = &inputPsi[j];
+		inputS[j] = 1.0;
 
-				ofVec3f v[3];
-				for (size_t l = 0; l < 3; l++)
-				{
-					v[l] = meshFace.getVertex(l) - modelVertex;
-//					cout << "j = "<< j << ":\t" << v[l] << endl;
-				}
-//				cout << "Volume at face " << j << ":\t" << v[0].dot(v[2].getCrossed(v[1])) << endl;
-				/*
-				cout << v[2] << endl;
-				cout << "j = " << j << ":\t" << (v[2].getCrossed(v[1])) << endl;
-				cout << v[2] << endl;
-				*/
-				ofVec3f p = v[0].dot(n)*n;
-//				cout << n.length() << endl;
-				double s[3], I[3], II[3];
-				ofVec3f q[3], N[3];
-				for (size_t l = 0; l < 3; l++)
-				{
-					int currentl = l;
-					int nextl = (l + 1) % 3;
-					s[l] = ((v[currentl] - p).getCrossed(v[nextl] - p)).dot(n) > 0 ? 1 : -1;
-					I[l] = GCTriInt(p, v[currentl], v[nextl], ofVec3f(0.0, 0.0, 0.0));
-					II[l] = GCTriInt(ofVec3f(0.0, 0.0, 0.0), v[nextl], v[currentl], ofVec3f(0.0, 0.0, 0.0));
-					q[l] = v[nextl].getCrossed(v[currentl]);
-					if (q[l].length() < 0.00001)
-					{
-						II[l] = 0.0;
-					}
-					else
-					{
-						N[l] = q[l].normalize();
-					}
-//					cout << N[l].length() << endl;
-				}
-				double I_t = -abs(s[0] * I[0] + s[1] * I[1] + s[2] * I[2]);
-				*psi = -I_t;
-//				cout << psi << endl;
-				ofVec3f w = n*I_t + N[0] * II[0] + N[1] * II[1] + N[2] * II[2];
-//				cout << "w at face " << j << ":\t" << w.length() << endl;
-				if (w.length() < 0.00001)
-				{
-					if (s[0] > 0 && s[1] > 0 && s[2] > 0)
-					{
+		ofVec3f v[3];
+		for (size_t l = 0; l < 3; l++)
+		{
+			v[l] = meshFace.getVertex(l) - inputModelVertex;
+		}
+		ofVec3f p = v[0].dot(n)*n;
+		double s[3], I[3], II[3];
+		ofVec3f q[3], N[3];
+		for (size_t l = 0; l < 3; l++)
+		{
+			int currentl = l;
+			int nextl = (l + 1) % 3;
+			s[l] = ((v[currentl] - p).getCrossed(v[nextl] - p)).dot(n) > 0 ? 1 : -1;
+			I[l] = GCTriInt(p, v[currentl], v[nextl], ofVec3f(0.0, 0.0, 0.0));
+			II[l] = GCTriInt(ofVec3f(0.0, 0.0, 0.0), v[nextl], v[currentl], ofVec3f(0.0, 0.0, 0.0));
+			q[l] = v[nextl].getCrossed(v[currentl]);
+			if (q[l].length() < 0.00001)
+			{
+				II[l] = 0.0;
+			}
+			else
+			{
+				N[l] = q[l].normalize();
+			}
+		}
+		double I_t = -abs(s[0] * I[0] + s[1] * I[1] + s[2] * I[2]);
+		*psi = -I_t;
+		ofVec3f w = n*I_t + N[0] * II[0] + N[1] * II[1] + N[2] * II[2];
+		if (w.length() < 0.00001)
+		{
+			if (s[0] > 0 && s[1] > 0 && s[2] > 0)
+			{
 
-					}
-				}
-				else
-				{
-					//					cout << "IN" << endl;
-					for (size_t l = 0; l < 3; l++)
-					{
-						int currentl = l;
-						int nextl = (l + 1) % 3;
-						*phi[currentl] += (N[nextl].dot(w) / N[nextl].dot(v[currentl]));
-						//					cout << "N:\t" << N[nextl] << endl;
-						//					cout << "v:\t" << v[currentl] << endl;
-						//					cout << q[nextl].dot(v[currentl]) << endl;
-						//					cout << "phi[l]:\t" << phi[currentl] << endl;
-					}
-				}
-//				cout << psi << endl;
-//				estimate += -1/2.5*(psi*n);// +phi[0] * meshFace.getVertex(0) + phi[1] * meshFace.getVertex(1) + phi[2] * meshFace.getVertex(2));
-//				checkPhi += phi[0] + phi[1] + phi[2];// += (psi*n + phi[0] * meshFace.getVertex(0) + phi[1] * meshFace.getVertex(1) + phi[2] * meshFace.getVertex(2));
 			}
-//			if (e == testI)
-//			{
-			double checkPhi = 0;
-			for (size_t ver = 0; ver < tempVerticesPhiMap.size(); ver++)
+		}
+		else
+		{
+			//					cout << "IN" << endl;
+			for (size_t l = 0; l < 3; l++)
 			{
-//					cout << VerticesPhiMap[ver].second << endl;
-				checkPhi += tempVerticesPhiMap[ver].second;// VerticesPhiMap[ver].second*VerticesPhiMap[ver].first;
-//					cout << ver << endl;
+				int currentl = l;
+				int nextl = (l + 1) % 3;
+				*phi[currentl] += (N[nextl].dot(w) / N[nextl].dot(v[currentl]));
 			}
-			for (size_t ver = 0; ver < tempVerticesPhiMap.size(); ver++)
-			{
-				estimate += tempVerticesPhiMap[ver].second*tempVerticesPhiMap[ver].first;
-			}
-			for (size_t face = 0; face < tempFacesPsiMap.size(); face++)
-			{
-				ofMeshFace meshFace = tempFacesPsiMap[face].first;
-				ofVec3f a = meshFace.getVertex(0);
-				ofVec3f b = meshFace.getVertex(1);
-				ofVec3f c = meshFace.getVertex(2);
-				ofVec3f ba = b - a;
-				ofVec3f ca = c - a;
-				ofVec3f d = ba.getCrossed(ca);
-				ofVec3f n = d.normalize();
-				estimate += tempFacesPsiMap[face].second*n;
-			}
-			estimate /= checkPhi;
-//			cout << "model vertex-" << e << ":\t" << modelVertex << endl;
-//			cout << "estimate vertex-" << e << ":\t" << estimate << endl;
-//				cout << checkPhi << endl;
-//				cout << e << ":\t" << modelVertex.distance(estimate) << endl;
-//			}
 		}
 	}
 }

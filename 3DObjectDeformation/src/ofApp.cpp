@@ -29,7 +29,7 @@ void ofApp::setup() {
 	checkCageParts();
 
 	mesh = model.getMesh(0);
-	cout << mesh.getNumVertices() << endl;
+//	cout << mesh.getNumVertices() << endl;
 	testCageMesh = testCage.getMesh(0);
 	xSize = 2.5;
 	ySize = 2.5;
@@ -63,25 +63,25 @@ void ofApp::setup() {
 	tempMeshFace1.setVertex(2, tempAdd3);
 	ofMeshFace tempMeshFace2 = ofMeshFace();
 	tempMeshFace2.setVertex(0, tempAdd2);
-	tempMeshFace2.setVertex(1, tempAdd3);
-	tempMeshFace2.setVertex(2, tempAdd4);
+	tempMeshFace2.setVertex(1, tempAdd4);
+	tempMeshFace2.setVertex(2, tempAdd3);
 	localMeshFaces.push_back(tempMeshFace1);
 	localMeshFaces.push_back(tempMeshFace2);
 
 	human.createModelAndCage(mesh.getVertices(), cage.getMesh(0).getVertices(), localMeshFaces);
-	//	ofVec3f* test = human.getModelVertices();
-	//	cout << human.getModelVerticesNum() << endl;
-	//	for (size_t i = 0; i < human.getModelVerticesNum(); i++)
-	//	{
-	//		cout << test[i] << endl;
-	//	}
-	tempCageMesh.addVertices(human.getModelVertices(), human.getModelVerticesNum());
+	shared_ptr<ofVec3f> test = human.getPartModelVertices("finger");
+	cout << human.getPartModelVerticesNum("finger") << endl;
+//	for (size_t i = 0; i < human.getPartModelVerticesNum("finger"); i++)
+//	{
+//		cout << test.get()[i] << endl;
+//	}
+	tempCageMesh.addVertices(human.getModelVertices().get(), human.getModelVerticesNum());
 	for (size_t i = 0; i < human.getModelVerticesNum(); i++)
 	{
 		tempCageMesh.addColor(ofFloatColor(0, 0, 255));
 	}
 
-	testMesh.addVertices(human.getCageVertices(), human.getCageVerticesNum());
+	testMesh.addVertices(human.getCageVertices().get(), human.getCageVerticesNum());
 	for (size_t i = 0; i < human.getCageVerticesNum(); i++)
 	{
 		testMesh.addColor(ofFloatColor(255, 0, 0));

@@ -14,13 +14,10 @@ Object_3D::~Object_3D()
 int* Object_3D::addModelVertices(ofVec3f* inputVertices, int inputVerticesNum)
 {
 	int* detectedModelVertexIndex = new int[inputVerticesNum];
-//	cout << sizeof(inputVertices) << endl;
 	for (size_t i = 0; i < inputVerticesNum; i++)
 	{
-//		cout << i << endl;
 		ofVec3f inputVertex = inputVertices[i];
 		detectedModelVertexIndex[i] = internalModelVertexInspection(inputVertex);
-//		cout << detectedModelVertexIndex[i] << endl;
 		if (detectedModelVertexIndex[i] < 0)
 		{
 			detectedModelVertexIndex[i] = this->vModelVertices.size();
@@ -78,6 +75,7 @@ int Object_3D::addCageFacesByVertices(ofVec3f* inputFaceVertices, int inputFaceV
 	tempCageFaces.verticesId[0] = cageVerticesIndices[0];
 	tempCageFaces.verticesId[1] = cageVerticesIndices[1];
 	tempCageFaces.verticesId[2] = cageVerticesIndices[2];
+	tempCageFaces.normalSign = 1;
 	this->vCageFaces.push_back(tempCageFaces);
 	return internalCageFacesNumber;
 }
@@ -104,7 +102,6 @@ void Object_3D::createModelAndCage(ofVec3f * inputModelVertices, ofVec3f * input
 	addModelVertices(inputModelVertices, inputModelVertices_size);
 	addCageVertices(inputCageVertices, inputCageVertices_size);
 	addCageFacesByMeshFaces(inputCageFaces, inputCageFaces_size);
-	initObject();
 }
 
 void Object_3D::createModelAndCage(vector<ofVec3f> inputVectorModelVertices, vector<ofVec3f> inputVectorCageVertices, vector<ofMeshFace> inputVectorCageFaces)
@@ -133,12 +130,13 @@ void Object_3D::createModelAndCage(vector<ofVec3f> inputVectorModelVertices, vec
 	string partName = "finger";
 	vector<ofVec3f> cageVertices = Util::readPartCageVerticesFromFile(partName);
 	createPartsFromModel(partName, cageVertices);
+	initObject();
 }
 
 void Object_3D::createPartsFromModel(string inputPartName, vector<ofVec3f> inputPartCageVertices)
 {
 	int partIndex = addPartsName(inputPartName);
-	vector<int> cageFacesIndesDetected = internalCageFaceInspection(inputPartCageVertices);
+	vector<int> cageFacesIndesDetected = internalCageFaceFromVerticesInspection(inputPartCageVertices);
 
 	int* detectedInternalCageFacesIndex = new int[cageFacesIndesDetected.size()];
 	for (size_t i = 0; i < cageFacesIndesDetected.size(); i++)
@@ -157,15 +155,17 @@ void Object_3D::createPartsFromModel(string inputPartName, vector<ofVec3f> input
 	tempPartCageVertices.id = partIndex;
 	tempPartCageVertices.partName = inputPartName;
 	tempPartCageVertices.cageVerticesId = detectedInternalCageVerticesIndices;
+	tempPartCageVertices.partCageVerticesNum = inputPartCageVertices.size();
 	this->vPartCageVertices.push_back(tempPartCageVertices);
 
 	PartCageFaces tempPartCageFace;
 	tempPartCageFace.id = partIndex;
 	tempPartCageFace.partName = inputPartName;
 	tempPartCageFace.cageFacesId = detectedInternalCageFacesIndex;
+	tempPartCageFace.partCageFacesNum = cageFacesIndesDetected.size();
 	this->vPartCageFaces.push_back(tempPartCageFace);
 
-	vector<ofVec3f> tempModelVertices;
+	vector<ofVec3f> tempVPartModelVertices;
 	for (size_t j = 0; j < vModelVertices.size(); j++)
 	{
 		ofVec3f testPoint = vModelVertices[j];
@@ -181,10 +181,6 @@ void Object_3D::createPartsFromModel(string inputPartName, vector<ofVec3f> input
 			ofVec3f ca = c - a;
 			ofVec3f d = ba.getCrossed(ca);
 			ofVec3f faceNormal = d.normalize();
-			if (k == 11)
-			{
-				faceNormal = -faceNormal;
-			}
 			decision = !Util::upperLowerPlaneTest(testPoint, faceNormal, facePoint);
 
 			if (!decision)
@@ -194,9 +190,23 @@ void Object_3D::createPartsFromModel(string inputPartName, vector<ofVec3f> input
 		}
 		if (decision)
 		{
-			tempModelVertices.push_back(testPoint);
+			tempVPartModelVertices.push_back(testPoint);
 		}
 	}
+
+	ofVec3f* tempAddPartModelVertices = new ofVec3f[tempVPartModelVertices.size()];
+	for (size_t i = 0; i < tempVPartModelVertices.size(); i++)
+	{
+		tempAddPartModelVertices[i] = tempVPartModelVertices[i];
+	}
+
+	int* detectedInternalModelVerticesIndices = addModelVertices(tempAddPartModelVertices, tempVPartModelVertices.size());
+	PartModelVertices tempPartModelVertices;
+	tempPartModelVertices.id = partIndex;
+	tempPartModelVertices.partName = inputPartName;
+	tempPartModelVertices.modelVerticesId = detectedInternalModelVerticesIndices;
+	tempPartModelVertices.partModelVerticesNum = tempVPartModelVertices.size();
+	this->vPartModelVertices.push_back(tempPartModelVertices);
 }
 
 void Object_3D::createPartsFromScratch(string inputPartName, ofVec3f* inputPartModelVertices, ofMeshFace* inputPartCageMeshFaces, int inputPartModelVertices_size, int inputPartCageMeshFaces_size)
@@ -280,9 +290,10 @@ int Object_3D::internalCageFaceInspection(ofMeshFace inputCageFace)
 			return j;
 		}
 	}
+	return -1;
 }
 
-vector<int> Object_3D::internalCageFaceInspection(vector<ofVec3f> inputCageVertices)
+vector<int> Object_3D::internalCageFaceFromVerticesInspection(vector<ofVec3f> inputCageVertices)
 {
 	bool indicator;
 	vector<int> vIndexDetected;
@@ -320,55 +331,52 @@ void Object_3D::initObject()
 	modelVertices = new ofVec3f[vModelVertices.size()];
 	for (size_t i = 0; i < vModelVertices.size(); i++)
 	{
-		modelVertices[i] = vModelVertices[i];
+		this->modelVertices[i] = vModelVertices[i];
 	}
 
 	cageVertices = new ofVec3f[vCageVertices.size()];
 	for (size_t i = 0; i < vCageVertices.size(); i++)
 	{
-		cageVertices[i] = vCageVertices[i];
+		this->cageVertices[i] = vCageVertices[i];
 	}
 
 	cageFaces = new CageFaces[vCageFaces.size()];
 	for (size_t i = 0; i < vCageFaces.size(); i++)
 	{
-		cageFaces[i] = vCageFaces[i];
+		this->cageFaces[i] = vCageFaces[i];
 	}
 
 	partModelVertices = new PartModelVertices[vPartModelVertices.size()];
 	for (size_t i = 0; i < vPartModelVertices.size(); i++)
 	{
-		partModelVertices[i] = vPartModelVertices[i];
+		this->partModelVertices[i] = vPartModelVertices[i];
 	}
 
 	partCageVertices = new PartCageVertices[vPartCageVertices.size()];
 	for (size_t i = 0; i < vPartCageVertices.size(); i++)
 	{
-		partCageVertices[i] = vPartCageVertices[i];
+		this->partCageVertices[i] = vPartCageVertices[i];
 	}
 
 	partCageFaces = new PartCageFaces[vPartCageFaces.size()];
 	for (size_t i = 0; i < vPartCageFaces.size(); i++)
 	{
-		partCageFaces[i] = vPartCageFaces[i];
+		this->partCageFaces[i] = vPartCageFaces[i];
 	}
 }
 
-ofVec3f * Object_3D::getModelVertices()
+shared_ptr<ofVec3f> Object_3D::getModelVertices()
 {
-	ofVec3f* outputModelVertices = new ofVec3f[this->vModelVertices.size()];
-//	cout << vModelVertices.size() << endl;
+	shared_ptr<ofVec3f> outputModelVertices(new ofVec3f[this->vModelVertices.size()], array_deleter<ofVec3f>());
 	for (size_t i = 0; i < this->vModelVertices.size(); i++)
 	{
-		outputModelVertices[i] = modelVertices[i];
-//		cout << vModelVertices[i] << endl;
+		outputModelVertices.get()[i] = this->modelVertices[i];
 	}
 	return outputModelVertices;
 }
 
-ofVec3f * Object_3D::getPartModelVertices(string partName)
+shared_ptr<ofVec3f> Object_3D::getPartModelVertices(string partName)
 {
-	ofVec3f* outputPartModelVertices = new ofVec3f[vPartModelVertices.size()];
 	PartModelVertices inspectedPartModelVertex;
 	bool found = false;
 	for (size_t i = 0; i < vPartModelVertices.size(); i++)
@@ -377,10 +385,11 @@ ofVec3f * Object_3D::getPartModelVertices(string partName)
 		string inspectedName = inspectedPartModelVertex.partName;
 		if (inspectedName == partName)
 		{
-			int partModelVerticesNum = sizeof(inspectedPartModelVertex.modelVerticesId) / sizeof(*inspectedPartModelVertex.modelVerticesId);
+			int partModelVerticesNum = inspectedPartModelVertex.partModelVerticesNum;
+			shared_ptr<ofVec3f> outputPartModelVertices(new ofVec3f[partModelVerticesNum], array_deleter<ofVec3f>());
 			for (size_t j = 0; j < partModelVerticesNum; j++)
 			{
-				outputPartModelVertices[j] = modelVertices[inspectedPartModelVertex.modelVerticesId[j]];
+				outputPartModelVertices.get()[j] = this->modelVertices[inspectedPartModelVertex.modelVerticesId[j]];
 			}
 			return outputPartModelVertices;
 		}
@@ -391,19 +400,18 @@ ofVec3f * Object_3D::getPartModelVertices(string partName)
 	}
 }
 
-ofVec3f * Object_3D::getCageVertices()
+shared_ptr<ofVec3f> Object_3D::getCageVertices()
 {
-	ofVec3f* outputCageVertices = new ofVec3f[this->vCageVertices.size()];
+	shared_ptr<ofVec3f> outputCageVertices(new ofVec3f[this->vCageVertices.size()]);
 	for (size_t i = 0; i < this->vCageVertices.size(); i++)
 	{
-		outputCageVertices[i] = cageVertices[i];
+		outputCageVertices.get()[i] = this->cageVertices[i];
 	}
 	return outputCageVertices;
 }
 
-ofVec3f * Object_3D::getPartCageVertices(string partName)
+shared_ptr<ofVec3f> Object_3D::getPartCageVertices(string partName)
 {
-	ofVec3f* outputPartCageVertices = new ofVec3f[vPartCageVertices.size()];
 	PartCageVertices inspectedPartCageVertex;
 	bool found = false;
 	for (size_t i = 0; i < vPartModelVertices.size(); i++)
@@ -412,10 +420,11 @@ ofVec3f * Object_3D::getPartCageVertices(string partName)
 		string inspectedName = inspectedPartCageVertex.partName;
 		if (inspectedName == partName)
 		{
-			int partModelVerticesNum = sizeof(inspectedPartCageVertex.cageVerticesId) / sizeof(*inspectedPartCageVertex.cageVerticesId);
-			for (size_t j = 0; j < partModelVerticesNum; j++)
+			int partCageVerticesNum = inspectedPartCageVertex.partCageVerticesNum;
+			shared_ptr<ofVec3f> outputPartCageVertices(new ofVec3f[partCageVerticesNum], array_deleter<ofVec3f>());
+			for (size_t j = 0; j < partCageVerticesNum; j++)
 			{
-				outputPartCageVertices[j] = modelVertices[inspectedPartCageVertex.cageVerticesId[j]];
+				outputPartCageVertices.get()[j] = this->modelVertices[inspectedPartCageVertex.cageVerticesId[j]];
 			}
 			return outputPartCageVertices;
 		}
@@ -426,21 +435,49 @@ ofVec3f * Object_3D::getPartCageVertices(string partName)
 	}
 }
 
-ofMeshFace * Object_3D::getCageFaces()
+shared_ptr<ofMeshFace> Object_3D::getCageFaces()
 {
-	ofMeshFace* outputCageFaces = new ofMeshFace[this->vCageFaces.size()];
+	shared_ptr<ofMeshFace> outputCageFaces(new ofMeshFace[this->vCageFaces.size()],array_deleter<ofMeshFace>());
 	for (size_t i = 0; i < this->vCageFaces.size(); i++)
 	{
-		outputCageFaces[i].setVertex(0, modelVertices[cageFaces[i].verticesId[0]]);
-		outputCageFaces[i].setVertex(1, modelVertices[cageFaces[i].verticesId[1]]);
-		outputCageFaces[i].setVertex(2, modelVertices[cageFaces[i].verticesId[2]]);
+		outputCageFaces.get()[i].setVertex(0, modelVertices[cageFaces[i].verticesId[0]]);
+		outputCageFaces.get()[i].setVertex(1, modelVertices[cageFaces[i].verticesId[1]]);
+		outputCageFaces.get()[i].setVertex(2, modelVertices[cageFaces[i].verticesId[2]]);
 	}
 	return outputCageFaces;
 }
 
-ofMeshFace * Object_3D::getPartCageFaces()
+shared_ptr<ofMeshFace> Object_3D::getPartCageFaces(string partName)
 {
-	return nullptr;
+	bool found = false;
+	PartCageFaces detectedPartCageFaces;
+	for (size_t i = 0; i < vPartCageFaces.size(); i++)
+	{
+		PartCageFaces inspectedPartCageFaces = partCageFaces[i];
+		if (inspectedPartCageFaces.partName == partName)
+		{
+			detectedPartCageFaces = inspectedPartCageFaces;
+			found = true;
+			break;
+		}
+	}
+	if (!found)
+	{
+		return nullptr;
+	}
+	shared_ptr<ofMeshFace> returnMeshFaces(new ofMeshFace[detectedPartCageFaces.partCageFacesNum]);
+	for (size_t i = 0; i < detectedPartCageFaces.partCageFacesNum; i++)
+	{
+		ofVec3f v0 = this->cageVertices[this->cageFaces[detectedPartCageFaces.cageFacesId[i]].verticesId[0]];
+		ofVec3f v1 = this->cageVertices[this->cageFaces[detectedPartCageFaces.cageFacesId[i]].verticesId[1]];
+		ofVec3f v2 = this->cageVertices[this->cageFaces[detectedPartCageFaces.cageFacesId[i]].verticesId[2]];
+
+		returnMeshFaces.get()[i].setVertex(0, v0);
+		returnMeshFaces.get()[i].setVertex(1, v1);
+		returnMeshFaces.get()[i].setVertex(2, v2);
+	}
+
+	return returnMeshFaces;
 }
 
 int Object_3D::getModelVerticesNum()
@@ -456,6 +493,51 @@ int Object_3D::getCageVerticesNum()
 int Object_3D::getCageFacesNum()
 {
 	return this->vCageFaces.size();
+}
+
+int Object_3D::getPartModelVerticesNum(string partName)
+{
+	PartModelVertices inspectedPartModelVertices;
+	for (size_t i = 0; i < vPartModelVertices.size(); i++)
+	{
+		inspectedPartModelVertices = this->partModelVertices[i];
+		string inspectedName = inspectedPartModelVertices.partName;
+		if (inspectedName == partName)
+		{
+			return inspectedPartModelVertices.partModelVerticesNum;
+		}
+	}
+		return 0;
+}
+
+int Object_3D::getPartCageVerticesNum(string partName)
+{
+	PartCageVertices inspectedPartCageVertices;
+	for (size_t i = 0; i < vPartCageVertices.size(); i++)
+	{
+		inspectedPartCageVertices = this->partCageVertices[i];
+		string inspectedName = inspectedPartCageVertices.partName;
+		if (inspectedName == partName)
+		{
+			return inspectedPartCageVertices.partCageVerticesNum;
+		}
+	}
+	return 0;
+}
+
+int Object_3D::getPartCageFacesNum(string partName)
+{
+	PartCageFaces inspectedPartCageFaces;
+	for (size_t i = 0; i < vPartCageFaces.size(); i++)
+	{
+		inspectedPartCageFaces = this->partCageFaces[i];
+		string inspectedName = inspectedPartCageFaces.partName;
+		if (inspectedName == partName)
+		{
+			return inspectedPartCageFaces.partCageFacesNum;
+		}
+	}
+	return 0;
 }
 
 void Object_3D::updateModelVertices()

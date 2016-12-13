@@ -1,6 +1,16 @@
 #pragma once
 
 #include "ofMain.h"
+
+template< typename T >
+struct array_deleter
+{
+	void operator ()(T const * p)
+	{
+		delete[] p;
+	}
+};
+
 class Util
 {
 public:
