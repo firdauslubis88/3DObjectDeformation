@@ -31,12 +31,23 @@ typedef struct PartCageFaces {
 	int partCageFacesNum;
 } PartCageFaces;
 
-typedef struct BarycentricCoord {
+typedef struct ModelBarycentricCoords {
 	int modelVertexId;
+	int* cageVerticesId;
+	int* cageFacesId;
+	double* phi;
+	double* psi;
+	double* s;
+	int cageVerticesNum;
+	int cageFacesNum;
+} ModelBarycentricCoords;
+
+typedef struct PartBarycentricCoords {
+	int partId;
 	string partName;
-	pair<int, double>* cageVerticesId;
-	pair<int, double>* cageFacesId;
-} BarycentricCoord;
+	int* modelBarycentricCoordId;
+	int partBarycentricCoordNum;
+} PartBarycentricCoords;
 
 class Object_3D
 {
@@ -65,12 +76,14 @@ public:
 	shared_ptr<ofVec3f> getPartCageVertices(string partName);
 	shared_ptr<ofMeshFace> getCageFaces();
 	shared_ptr<ofMeshFace> getPartCageFaces(string partName);
+	pair<int*,shared_ptr<ofVec3f>> getPartVerticesATGreen(string partName);
 	int getModelVerticesNum();
 	int getCageVerticesNum();
 	int getCageFacesNum();
 	int getPartModelVerticesNum(string partName);
 	int getPartCageVerticesNum(string partName);
 	int getPartCageFacesNum(string partName);
+	void update();
 	void updateModelVertices();
 	void updateCageVertices();
 
@@ -81,7 +94,8 @@ private:
 	vector<PartModelVertices> vPartModelVertices;
 	vector<PartCageVertices> vPartCageVertices;
 	vector<PartCageFaces> vPartCageFaces;
-	vector<BarycentricCoord> vGreenCoord;
+	vector<ModelBarycentricCoords> vModelGreenCoords;
+	vector<PartBarycentricCoords> vPartGreenCoords;
 	vector<string> vPartsName;
 
 	ofVec3f* modelVertices;
@@ -91,7 +105,8 @@ private:
 	PartModelVertices* partModelVertices;
 	PartCageVertices* partCageVertices;
 	PartCageFaces* partCageFaces;
-//	BarycentricCoord greenCoord;
+	ModelBarycentricCoords* modelGreenCoords;
+	PartBarycentricCoords* partGreenCoords;
 
 	float foundThreshold = 0.00001;
 };

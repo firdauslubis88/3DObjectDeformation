@@ -12,9 +12,9 @@ public:
 	void initCage(ofMesh mesh);
 	void cagePartsInit(string partName);
 	void initModel(ofMesh mesh);
-	void computeGreenCoordinate(ofVec3f modelVertex, ofMeshFace* cageFaces, ofVec3f* cageVertices, double* psi, double* phi, double* s, int cageFacesNum, int cageVerticesNum);
-	static double* computeGreenCoordinate(ofVec3f inputModelVertex, ofVec3f* inputCageVertices, ofMeshFace* inputCageFaces);
-	double GCTriInt(ofVec3f p, ofVec3f v1, ofVec3f v2, ofVec3f e);
+	static void computeGreenCoordinate(ofVec3f modelVertex, ofMeshFace* cageFaces, ofVec3f* cageVertices, double* psi, double* phi, double* s, int cageFacesNum, int cageVerticesNum);
+	double* computeGreenCoordinate(ofVec3f inputModelVertex, ofVec3f* inputCageVertices, ofMeshFace* inputCageFaces);
+	static double GCTriInt(ofVec3f p, ofVec3f v1, ofVec3f v2, ofVec3f e);
 	void initVerticesPhiMap();
 	void initFacesPsiMap();
 	void deform();

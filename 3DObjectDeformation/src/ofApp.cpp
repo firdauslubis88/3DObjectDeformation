@@ -70,7 +70,7 @@ void ofApp::setup() {
 
 	human.createModelAndCage(mesh.getVertices(), cage.getMesh(0).getVertices(), localMeshFaces);
 	shared_ptr<ofVec3f> test = human.getPartModelVertices("finger");
-	cout << human.getPartModelVerticesNum("finger") << endl;
+//	cout << human.getPartModelVerticesNum("finger") << endl;
 //	for (size_t i = 0; i < human.getPartModelVerticesNum("finger"); i++)
 //	{
 //		cout << test.get()[i] << endl;
@@ -87,6 +87,11 @@ void ofApp::setup() {
 		testMesh.addColor(ofFloatColor(255, 0, 0));
 	}
 
+	shared_ptr<ofVec3f> partVerticesATGreen = human.getPartVerticesATGreen("finger");
+//	for (size_t i = 0; i < human.getPartModelVerticesNum("finger"); i++)
+//	{
+//		cout << i << ":\t" << partVerticesATGreen.get()[i] << endl;
+//	}
 	//	cout << human.getCageFacesNum() << endl;
 	//	cout << human.getModelVerticesNum() << endl;
 	//	cout << human.getCageVerticesNum() << endl;

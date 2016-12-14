@@ -242,12 +242,13 @@ void GreenCoordinate::computeGreenCoordinate(ofVec3f inputModelVertex, ofMeshFac
 		double* psi;
 
 		ofMeshFace meshFace = inputCageFaces[j];
-		ofVec3f a = meshFace.getVertex(0);
-		ofVec3f b = meshFace.getVertex(1);
-		ofVec3f c = meshFace.getVertex(2);
-		ofVec3f ba = b - a;
-		ofVec3f ca = c - a;
+		ofVec3f v0 = meshFace.getVertex(0);
+		ofVec3f v1 = meshFace.getVertex(1);
+		ofVec3f v2 = meshFace.getVertex(2);
+		ofVec3f ba = v1 - v0;
+		ofVec3f ca = v2 - v0;
 		ofVec3f d = ba.getCrossed(ca);
+
 		ofVec3f n = d.normalize();
 		//Preparing phi
 		for (size_t l = 0; l < 3; l++)
@@ -265,6 +266,7 @@ void GreenCoordinate::computeGreenCoordinate(ofVec3f inputModelVertex, ofMeshFac
 		}
 		//Preparing psi
 		psi = &inputPsi[j];
+		//Preparing s
 		inputS[j] = 1.0;
 
 		ofVec3f v[3];
@@ -293,7 +295,9 @@ void GreenCoordinate::computeGreenCoordinate(ofVec3f inputModelVertex, ofMeshFac
 			}
 		}
 		double I_t = -abs(s[0] * I[0] + s[1] * I[1] + s[2] * I[2]);
+//		cout << j << ":\t" << n << endl;
 		*psi = -I_t;
+//		cout << j << ":\t" << -I_t << endl;
 		ofVec3f w = n*I_t + N[0] * II[0] + N[1] * II[1] + N[2] * II[2];
 		if (w.length() < 0.00001)
 		{
@@ -311,8 +315,39 @@ void GreenCoordinate::computeGreenCoordinate(ofVec3f inputModelVertex, ofMeshFac
 				int nextl = (l + 1) % 3;
 				*phi[currentl] += (N[nextl].dot(w) / N[nextl].dot(v[currentl]));
 			}
+//			cout << *phi[0] << endl;
 		}
 	}
+	double checkPhi = 0.0;
+	ofVec3f estimate = ofVec3f(0, 0, 0);
+	for (size_t ver = 0; ver < inputCageVerticesNum; ver++)
+	{
+		//					cout << VerticesPhiMap[ver].second << endl;
+		checkPhi += inputPhi[ver];// VerticesPhiMap[ver].second*VerticesPhiMap[ver].first;
+//		cout << inputPhi[ver] << endl;
+	}
+	for (size_t ver = 0; ver < inputCageVerticesNum; ver++)
+	{
+		estimate += inputCageVertices[ver]*inputPhi[ver];
+	}
+	for (size_t face = 0; face < inputCageFacesNum; face++)
+	{
+		ofMeshFace meshFace = inputCageFaces[face];
+		ofVec3f a = meshFace.getVertex(0);
+		ofVec3f b = meshFace.getVertex(1);
+		ofVec3f c = meshFace.getVertex(2);
+		ofVec3f ba = b - a;
+		ofVec3f ca = c - a;
+		ofVec3f d = ba.getCrossed(ca);
+		ofVec3f n = d.normalize();
+		estimate += inputPsi[face]*n;
+	}
+	estimate /= checkPhi;
+//	cout << checkPhi << endl;
+//	cout << "REAL:\t" << inputModelVertex << endl;
+//	cout << "ESTI:\t" << estimate << endl;
+//	cout << inputCageVerticesNum << endl;
+//	cout << inputCageFacesNum << endl;
 }
 
 double GreenCoordinate::GCTriInt(ofVec3f p, ofVec3f v1, ofVec3f v2, ofVec3f etha)

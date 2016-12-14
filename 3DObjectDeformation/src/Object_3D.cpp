@@ -77,6 +77,7 @@ int Object_3D::addCageFacesByVertices(ofVec3f* inputFaceVertices, int inputFaceV
 	tempCageFaces.verticesId[2] = cageVerticesIndices[2];
 	tempCageFaces.normalSign = 1;
 	this->vCageFaces.push_back(tempCageFaces);
+	delete[] cageVerticesIndices;
 	return internalCageFacesNumber;
 }
 
@@ -125,11 +126,15 @@ void Object_3D::createModelAndCage(vector<ofVec3f> inputVectorModelVertices, vec
 	}
 
 	createModelAndCage(inputModelVertices, inputCageVertices, inputCageFaces, inputVectorModelVertices.size(), inputVectorCageVertices.size(), inputVectorCageFaces.size());
+	delete[] inputModelVertices;
+	delete[] inputCageVertices;
+	delete[] inputCageFaces;
 
 	//Place here (temporarily)
 	string partName = "finger";
 	vector<ofVec3f> cageVertices = Util::readPartCageVerticesFromFile(partName);
 	createPartsFromModel(partName, cageVertices);
+	initBarycentricCoordinate();
 	initObject();
 }
 
@@ -151,6 +156,7 @@ void Object_3D::createPartsFromModel(string inputPartName, vector<ofVec3f> input
 	}
 
 	int* detectedInternalCageVerticesIndices = addCageVertices(tempAddPartCageVertices, inputPartCageVertices.size());
+	delete[] tempAddPartCageVertices;
 	PartCageVertices tempPartCageVertices;
 	tempPartCageVertices.id = partIndex;
 	tempPartCageVertices.partName = inputPartName;
@@ -201,6 +207,7 @@ void Object_3D::createPartsFromModel(string inputPartName, vector<ofVec3f> input
 	}
 
 	int* detectedInternalModelVerticesIndices = addModelVertices(tempAddPartModelVertices, tempVPartModelVertices.size());
+	delete[] tempAddPartModelVertices;
 	PartModelVertices tempPartModelVertices;
 	tempPartModelVertices.id = partIndex;
 	tempPartModelVertices.partName = inputPartName;
@@ -230,7 +237,118 @@ void Object_3D::createPartsFromScratch(string inputPartName, ofVec3f* inputPartM
 
 bool Object_3D::initBarycentricCoordinate()
 {
-	return false;
+	for (size_t i = 0; i < vPartsName.size(); i++)
+	{
+		string inspectedPartName = this->vPartsName[i];
+		PartModelVertices inspectedPartModelVertex;
+		PartCageVertices inspectedPartCageVertex;
+		PartCageFaces inspectedPartCageFace;
+		for (size_t j = 0; j < this->vPartModelVertices.size(); j++)
+		{
+			inspectedPartModelVertex = this->vPartModelVertices[j];
+			if (inspectedPartModelVertex.partName == inspectedPartName)
+			{
+				break;
+			}
+			return false;
+		}
+		for (size_t j = 0; j < this->vPartCageVertices.size(); j++)
+		{
+			inspectedPartCageVertex = this->vPartCageVertices[j];
+			if (inspectedPartCageVertex.partName == inspectedPartName)
+			{
+				break;
+			}
+			return false;
+		}
+		for (size_t j = 0; j < this->vPartCageFaces.size(); j++)
+		{
+			inspectedPartCageFace = this->vPartCageFaces[j];
+			if (inspectedPartCageFace.partName == inspectedPartName)
+			{
+				break;
+			}
+			return false;
+		}
+
+		ofVec3f* passCageVertices = new ofVec3f[inspectedPartCageVertex.partCageVerticesNum];
+		int* cageVerticesIdList = new int[inspectedPartCageVertex.partCageVerticesNum];
+		for (size_t j = 0; j < inspectedPartCageVertex.partCageVerticesNum; j++)
+		{
+			passCageVertices[j] = this->vCageVertices[inspectedPartCageVertex.cageVerticesId[j]];
+			cageVerticesIdList[j] = inspectedPartCageVertex.cageVerticesId[j];
+		}
+
+		ofMeshFace* passCageFaces = new ofMeshFace[inspectedPartCageFace.partCageFacesNum];
+		int* cageFacesIdList = new int[inspectedPartCageFace.partCageFacesNum];
+		for (size_t j = 0; j < inspectedPartCageFace.partCageFacesNum; j++)
+		{
+			CageFaces inspectedCageFace = this->vCageFaces[inspectedPartCageFace.cageFacesId[j]];
+			ofVec3f v0 = this->vCageVertices[inspectedCageFace.verticesId[0]];
+			ofVec3f v1 = this->vCageVertices[inspectedCageFace.verticesId[1]];
+			ofVec3f v2 = this->vCageVertices[inspectedCageFace.verticesId[2]];
+			ofVec3f ba = v1 - v0;
+			ofVec3f ca = v2 - v0;
+			ofVec3f d = ba.getCrossed(ca);
+			ofVec3f n = d.normalize();
+
+			passCageFaces[j].setVertex(0, v0);
+			passCageFaces[j].setVertex(1, v1);
+			passCageFaces[j].setVertex(2, v2);
+			passCageFaces[j].setNormal(3, n); //could it work??
+
+			cageFacesIdList[j] = inspectedPartCageFace.cageFacesId[j];
+		}
+
+		int* passModelVerticesId = inspectedPartModelVertex.modelVerticesId;
+		int* modelGreenCoordsDetected = new int[inspectedPartModelVertex.partModelVerticesNum];
+		for (size_t j = 0; j < inspectedPartModelVertex.partModelVerticesNum; j++)
+		{
+			double* psi = new double[inspectedPartCageFace.partCageFacesNum];
+			for (size_t k = 0; k < inspectedPartCageFace.partCageFacesNum; k++)
+			{
+				psi[k] = 0.0;
+			}
+
+			double* phi = new double[inspectedPartCageVertex.partCageVerticesNum];
+			for (size_t k = 0; k < inspectedPartCageVertex.partCageVerticesNum; k++)
+			{
+				phi[k] = 0.0;
+			}
+
+			double* s = new double[inspectedPartCageFace.partCageFacesNum];
+			for (size_t k = 0; k < inspectedPartCageVertex.partCageVerticesNum; k++)
+			{
+				s[k] = 1.0;
+			}
+
+			ofVec3f passModelVertex = this->vModelVertices[passModelVerticesId[j]];
+			GreenCoordinate::computeGreenCoordinate(passModelVertex, passCageFaces, passCageVertices, psi, phi, s, inspectedPartCageFace.partCageFacesNum, inspectedPartCageVertex.partCageVerticesNum);
+
+			ModelBarycentricCoords tempModelGreenCoords;
+			tempModelGreenCoords.modelVertexId = passModelVerticesId[j];
+			tempModelGreenCoords.cageVerticesId = cageVerticesIdList;
+			tempModelGreenCoords.cageFacesId = cageFacesIdList;
+			tempModelGreenCoords.phi = phi;
+			tempModelGreenCoords.psi = psi;
+			tempModelGreenCoords.s = s;
+			tempModelGreenCoords.cageVerticesNum = inspectedPartCageVertex.partCageVerticesNum;
+			tempModelGreenCoords.cageFacesNum = inspectedPartCageFace.partCageFacesNum;
+
+			modelGreenCoordsDetected[j] = i*inspectedPartModelVertex.partModelVerticesNum + j; //temporary solution T T
+			this->vModelGreenCoords.push_back(tempModelGreenCoords);
+		}
+		delete[] passCageVertices;
+		delete[] passCageFaces;
+
+		PartBarycentricCoords tempPartGreenCoords;
+		tempPartGreenCoords.partId = i;
+		tempPartGreenCoords.partName = inspectedPartName;
+		tempPartGreenCoords.modelBarycentricCoordId = modelGreenCoordsDetected;
+		tempPartGreenCoords.partBarycentricCoordNum = inspectedPartModelVertex.partModelVerticesNum;
+		this->vPartGreenCoords.push_back(tempPartGreenCoords);
+	}
+	return true;
 }
 
 int Object_3D::internalModelVertexInspection(ofVec3f inputModelVertex)
@@ -328,40 +446,52 @@ vector<int> Object_3D::internalCageFaceFromVerticesInspection(vector<ofVec3f> in
 
 void Object_3D::initObject()
 {
-	modelVertices = new ofVec3f[vModelVertices.size()];
-	for (size_t i = 0; i < vModelVertices.size(); i++)
+	modelVertices = new ofVec3f[this->vModelVertices.size()];
+	for (size_t i = 0; i < this->vModelVertices.size(); i++)
 	{
-		this->modelVertices[i] = vModelVertices[i];
+		this->modelVertices[i] = this->vModelVertices[i];
 	}
 
-	cageVertices = new ofVec3f[vCageVertices.size()];
-	for (size_t i = 0; i < vCageVertices.size(); i++)
+	cageVertices = new ofVec3f[this->vCageVertices.size()];
+	for (size_t i = 0; i < this->vCageVertices.size(); i++)
 	{
-		this->cageVertices[i] = vCageVertices[i];
+		this->cageVertices[i] = this->vCageVertices[i];
 	}
 
-	cageFaces = new CageFaces[vCageFaces.size()];
-	for (size_t i = 0; i < vCageFaces.size(); i++)
+	cageFaces = new CageFaces[this->vCageFaces.size()];
+	for (size_t i = 0; i < this->vCageFaces.size(); i++)
 	{
-		this->cageFaces[i] = vCageFaces[i];
+		this->cageFaces[i] = this->vCageFaces[i];
 	}
 
-	partModelVertices = new PartModelVertices[vPartModelVertices.size()];
-	for (size_t i = 0; i < vPartModelVertices.size(); i++)
+	modelGreenCoords = new ModelBarycentricCoords[this->vModelGreenCoords.size()];
+	for (size_t i = 0; i < this->vModelGreenCoords.size(); i++)
 	{
-		this->partModelVertices[i] = vPartModelVertices[i];
+		this->modelGreenCoords[i] = this->vModelGreenCoords[i];
 	}
 
-	partCageVertices = new PartCageVertices[vPartCageVertices.size()];
-	for (size_t i = 0; i < vPartCageVertices.size(); i++)
+	partModelVertices = new PartModelVertices[this->vPartModelVertices.size()];
+	for (size_t i = 0; i < this->vPartModelVertices.size(); i++)
 	{
-		this->partCageVertices[i] = vPartCageVertices[i];
+		this->partModelVertices[i] = this->vPartModelVertices[i];
 	}
 
-	partCageFaces = new PartCageFaces[vPartCageFaces.size()];
-	for (size_t i = 0; i < vPartCageFaces.size(); i++)
+	partCageVertices = new PartCageVertices[this->vPartCageVertices.size()];
+	for (size_t i = 0; i < this->vPartCageVertices.size(); i++)
 	{
-		this->partCageFaces[i] = vPartCageFaces[i];
+		this->partCageVertices[i] = this->vPartCageVertices[i];
+	}
+
+	partCageFaces = new PartCageFaces[this->vPartCageFaces.size()];
+	for (size_t i = 0; i < this->vPartCageFaces.size(); i++)
+	{
+		this->partCageFaces[i] = this->vPartCageFaces[i];
+	}
+
+	partGreenCoords = new PartBarycentricCoords[this->vPartGreenCoords.size()];
+	for (size_t i = 0; i < this->vPartGreenCoords.size(); i++)
+	{
+		this->partGreenCoords[i] = this->vPartGreenCoords[i];
 	}
 }
 
@@ -480,6 +610,59 @@ shared_ptr<ofMeshFace> Object_3D::getPartCageFaces(string partName)
 	return returnMeshFaces;
 }
 
+pair<int*,shared_ptr<ofVec3f>> Object_3D::getPartVerticesATGreen(string partName)
+{
+	bool found = false;
+	PartBarycentricCoords detectedPartGreenCoords;
+	for (size_t i = 0; i < vPartGreenCoords.size(); i++)
+	{
+		PartBarycentricCoords inspectedPartGreenCoords = partGreenCoords[i];
+		if (inspectedPartGreenCoords.partName == partName)
+		{
+			detectedPartGreenCoords = inspectedPartGreenCoords;
+			found = true;
+			break;
+		}
+	}
+	if (!found)
+	{
+		return nullptr;
+	}
+	shared_ptr<ofVec3f> returnModelVertices(new ofVec3f[detectedPartGreenCoords.partBarycentricCoordNum]);
+	for (size_t i = 0; i < detectedPartGreenCoords.partBarycentricCoordNum; i++)
+	{
+		ModelBarycentricCoords inspectedModelGreenCoord = this->modelGreenCoords[detectedPartGreenCoords.modelBarycentricCoordId[i]];
+		ofVec3f inspectedModelVertex = this->modelVertices[inspectedModelGreenCoord.modelVertexId];
+		ofVec3f* inspectedCageVertices = new ofVec3f[inspectedModelGreenCoord.cageVerticesNum];
+		ofVec3f* inspectedCageFaces = new ofVec3f[inspectedModelGreenCoord.cageFacesNum];
+
+		returnModelVertices.get()[i] = ofVec3f(0,0,0);
+		double checkPhi = 0;
+		for (size_t j = 0; j < inspectedModelGreenCoord.cageVerticesNum; j++)
+		{
+			returnModelVertices.get()[i] += inspectedModelGreenCoord.phi[j]* this->cageVertices[inspectedModelGreenCoord.cageVerticesId[j]];
+			checkPhi += inspectedModelGreenCoord.phi[j];
+		}
+		for (size_t j = 0; j < inspectedModelGreenCoord.cageFacesNum; j++)
+		{
+			CageFaces currentCageFace = this->cageFaces[inspectedModelGreenCoord.cageFacesId[j]];
+			ofVec3f v0 = this->cageVertices[currentCageFace.verticesId[0]];
+			ofVec3f v1 = this->cageVertices[currentCageFace.verticesId[1]];
+			ofVec3f v2 = this->cageVertices[currentCageFace.verticesId[2]];
+			ofVec3f ba = v1 - v0;
+			ofVec3f ca = v2 - v0;
+			ofVec3f d = ba.getCrossed(ca);
+			ofVec3f n = d.normalize();
+
+			returnModelVertices.get()[i] += inspectedModelGreenCoord.psi[j] * n;
+		}
+		returnModelVertices.get()[i] /= checkPhi; // <- Normalization of phi so that sum of phi is equal to 1
+//		cout << "real-" << i <<":\t" << inspectedModelVertex << endl;
+//		cout << "esti-"<< i <<":\t" << returnModelVertices.get()[i] << endl;
+	}
+	return returnModelVertices;
+}
+
 int Object_3D::getModelVerticesNum()
 {
 	return this->vModelVertices.size();
@@ -540,8 +723,21 @@ int Object_3D::getPartCageFacesNum(string partName)
 	return 0;
 }
 
+void Object_3D::update()
+{
+	updateCageVertices();
+	updateModelVertices();
+}
+
 void Object_3D::updateModelVertices()
 {
+
+	for (size_t i = 0; i < vPartsName.size(); i++)
+	{
+		string partName = this->partsName[i];
+		getPartVerticesATGreen(partName);
+	}
+	getPartVerticesATGreen()
 }
 
 void Object_3D::updateCageVertices()
