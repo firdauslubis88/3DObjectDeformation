@@ -76,7 +76,7 @@ public:
 	shared_ptr<ofVec3f> getPartCageVertices(string partName);
 	shared_ptr<ofMeshFace> getCageFaces();
 	shared_ptr<ofMeshFace> getPartCageFaces(string partName);
-	pair<int*,shared_ptr<ofVec3f>> getPartVerticesATGreen(string partName);
+	shared_ptr<ofVec3f> getPartVerticesATGreen(string partName);
 	int getModelVerticesNum();
 	int getCageVerticesNum();
 	int getCageFacesNum();
@@ -109,5 +109,7 @@ private:
 	PartBarycentricCoords* partGreenCoords;
 
 	float foundThreshold = 0.00001;
+	int counter;
+	float handAddition = 0.0001;
 };
 

@@ -446,52 +446,58 @@ vector<int> Object_3D::internalCageFaceFromVerticesInspection(vector<ofVec3f> in
 
 void Object_3D::initObject()
 {
-	modelVertices = new ofVec3f[this->vModelVertices.size()];
+	this->modelVertices = new ofVec3f[this->vModelVertices.size()];
 	for (size_t i = 0; i < this->vModelVertices.size(); i++)
 	{
 		this->modelVertices[i] = this->vModelVertices[i];
 	}
 
-	cageVertices = new ofVec3f[this->vCageVertices.size()];
+	this->cageVertices = new ofVec3f[this->vCageVertices.size()];
 	for (size_t i = 0; i < this->vCageVertices.size(); i++)
 	{
 		this->cageVertices[i] = this->vCageVertices[i];
 	}
 
-	cageFaces = new CageFaces[this->vCageFaces.size()];
+	this->cageFaces = new CageFaces[this->vCageFaces.size()];
 	for (size_t i = 0; i < this->vCageFaces.size(); i++)
 	{
 		this->cageFaces[i] = this->vCageFaces[i];
 	}
 
-	modelGreenCoords = new ModelBarycentricCoords[this->vModelGreenCoords.size()];
+	this->modelGreenCoords = new ModelBarycentricCoords[this->vModelGreenCoords.size()];
 	for (size_t i = 0; i < this->vModelGreenCoords.size(); i++)
 	{
 		this->modelGreenCoords[i] = this->vModelGreenCoords[i];
 	}
 
-	partModelVertices = new PartModelVertices[this->vPartModelVertices.size()];
+	this->partModelVertices = new PartModelVertices[this->vPartModelVertices.size()];
 	for (size_t i = 0; i < this->vPartModelVertices.size(); i++)
 	{
 		this->partModelVertices[i] = this->vPartModelVertices[i];
 	}
 
-	partCageVertices = new PartCageVertices[this->vPartCageVertices.size()];
+	this->partCageVertices = new PartCageVertices[this->vPartCageVertices.size()];
 	for (size_t i = 0; i < this->vPartCageVertices.size(); i++)
 	{
 		this->partCageVertices[i] = this->vPartCageVertices[i];
 	}
 
-	partCageFaces = new PartCageFaces[this->vPartCageFaces.size()];
+	this->partCageFaces = new PartCageFaces[this->vPartCageFaces.size()];
 	for (size_t i = 0; i < this->vPartCageFaces.size(); i++)
 	{
 		this->partCageFaces[i] = this->vPartCageFaces[i];
 	}
 
-	partGreenCoords = new PartBarycentricCoords[this->vPartGreenCoords.size()];
+	this->partGreenCoords = new PartBarycentricCoords[this->vPartGreenCoords.size()];
 	for (size_t i = 0; i < this->vPartGreenCoords.size(); i++)
 	{
 		this->partGreenCoords[i] = this->vPartGreenCoords[i];
+	}
+
+	this->partsName = new string[this->vPartsName.size()];
+	for (size_t i = 0; i < this->vPartsName.size(); i++)
+	{
+		this->partsName[i] = this->vPartsName[i];
 	}
 }
 
@@ -610,7 +616,7 @@ shared_ptr<ofMeshFace> Object_3D::getPartCageFaces(string partName)
 	return returnMeshFaces;
 }
 
-pair<int*,shared_ptr<ofVec3f>> Object_3D::getPartVerticesATGreen(string partName)
+shared_ptr<ofVec3f> Object_3D::getPartVerticesATGreen(string partName)
 {
 	bool found = false;
 	PartBarycentricCoords detectedPartGreenCoords;
@@ -657,8 +663,6 @@ pair<int*,shared_ptr<ofVec3f>> Object_3D::getPartVerticesATGreen(string partName
 			returnModelVertices.get()[i] += inspectedModelGreenCoord.psi[j] * n;
 		}
 		returnModelVertices.get()[i] /= checkPhi; // <- Normalization of phi so that sum of phi is equal to 1
-//		cout << "real-" << i <<":\t" << inspectedModelVertex << endl;
-//		cout << "esti-"<< i <<":\t" << returnModelVertices.get()[i] << endl;
 	}
 	return returnModelVertices;
 }
@@ -729,18 +733,76 @@ void Object_3D::update()
 	updateModelVertices();
 }
 
-void Object_3D::updateModelVertices()
-{
-
-	for (size_t i = 0; i < vPartsName.size(); i++)
-	{
-		string partName = this->partsName[i];
-		getPartVerticesATGreen(partName);
-	}
-	getPartVerticesATGreen()
-}
-
 void Object_3D::updateCageVertices()
 {
+	for (size_t h = 0; h < vPartsName.size(); h++)
+	{
+		string partName = this->partsName[h];
+		PartCageVertices detectedPartCageVertices;
+		for (size_t i = 0; i < vPartCageVertices.size(); i++)
+		{
+			PartCageVertices inspectedPartCageVertex = this->partCageVertices[i];
+			if (inspectedPartCageVertex.partName == partName)
+			{
+				detectedPartCageVertices = inspectedPartCageVertex;
+				break;
+			}
+		}
+		for (size_t i = 0; i < detectedPartCageVertices.partCageVerticesNum; i++)
+		{
+			if (this->cageVertices[detectedPartCageVertices.cageVerticesId[i]].y < 10.00)
+			{
+				this->cageVertices[detectedPartCageVertices.cageVerticesId[i]] += ofVec3f(handAddition, 0.0, 0.0);
+			}
+		}
+	}
+	handAddition = counter%800 < 400 ? 0.001 : -0.001;
+	counter++;
+}
+
+void Object_3D::updateModelVertices()
+{
+	for (size_t h = 0; h < vPartsName.size(); h++)
+	{
+		string partName = this->partsName[h];
+		PartBarycentricCoords detectedPartGreenCoords;
+		for (size_t i = 0; i < vPartGreenCoords.size(); i++)
+		{
+			PartBarycentricCoords inspectedPartGreenCoords = partGreenCoords[i];
+			if (inspectedPartGreenCoords.partName == partName)
+			{
+				detectedPartGreenCoords = inspectedPartGreenCoords;
+				break;
+			}
+		}
+		shared_ptr<ofVec3f> updateModelVertices(new ofVec3f[detectedPartGreenCoords.partBarycentricCoordNum]);
+		for (size_t i = 0; i < detectedPartGreenCoords.partBarycentricCoordNum; i++)
+		{
+			ModelBarycentricCoords inspectedModelGreenCoord = this->modelGreenCoords[detectedPartGreenCoords.modelBarycentricCoordId[i]];
+
+			updateModelVertices.get()[i] = ofVec3f(0, 0, 0);
+			double checkPhi = 0;
+			for (size_t j = 0; j < inspectedModelGreenCoord.cageVerticesNum; j++)
+			{
+				updateModelVertices.get()[i] += inspectedModelGreenCoord.phi[j] * this->cageVertices[inspectedModelGreenCoord.cageVerticesId[j]];
+				checkPhi += inspectedModelGreenCoord.phi[j];
+			}
+			for (size_t j = 0; j < inspectedModelGreenCoord.cageFacesNum; j++)
+			{
+				CageFaces currentCageFace = this->cageFaces[inspectedModelGreenCoord.cageFacesId[j]];
+				ofVec3f v0 = this->cageVertices[currentCageFace.verticesId[0]];
+				ofVec3f v1 = this->cageVertices[currentCageFace.verticesId[1]];
+				ofVec3f v2 = this->cageVertices[currentCageFace.verticesId[2]];
+				ofVec3f ba = v1 - v0;
+				ofVec3f ca = v2 - v0;
+				ofVec3f d = ba.getCrossed(ca);
+				ofVec3f n = d.normalize();
+
+				updateModelVertices.get()[i] += inspectedModelGreenCoord.psi[j] * n;
+			}
+			updateModelVertices.get()[i] /= checkPhi; // <- Normalization of phi so that sum of phi is equal to 1
+			this->modelVertices[inspectedModelGreenCoord.modelVertexId] = updateModelVertices.get()[i];
+		}
+	}
 }
 

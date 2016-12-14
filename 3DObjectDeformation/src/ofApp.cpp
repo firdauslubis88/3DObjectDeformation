@@ -69,25 +69,8 @@ void ofApp::setup() {
 	localMeshFaces.push_back(tempMeshFace2);
 
 	human.createModelAndCage(mesh.getVertices(), cage.getMesh(0).getVertices(), localMeshFaces);
-	shared_ptr<ofVec3f> test = human.getPartModelVertices("finger");
-//	cout << human.getPartModelVerticesNum("finger") << endl;
-//	for (size_t i = 0; i < human.getPartModelVerticesNum("finger"); i++)
-//	{
-//		cout << test.get()[i] << endl;
-//	}
-	tempCageMesh.addVertices(human.getModelVertices().get(), human.getModelVerticesNum());
-	for (size_t i = 0; i < human.getModelVerticesNum(); i++)
-	{
-		tempCageMesh.addColor(ofFloatColor(0, 0, 255));
-	}
 
-	testMesh.addVertices(human.getCageVertices().get(), human.getCageVerticesNum());
-	for (size_t i = 0; i < human.getCageVerticesNum(); i++)
-	{
-		testMesh.addColor(ofFloatColor(255, 0, 0));
-	}
-
-	shared_ptr<ofVec3f> partVerticesATGreen = human.getPartVerticesATGreen("finger");
+//	shared_ptr<ofVec3f> partVerticesATGreen = human.getPartVerticesATGreen("finger");
 //	for (size_t i = 0; i < human.getPartModelVerticesNum("finger"); i++)
 //	{
 //		cout << i << ":\t" << partVerticesATGreen.get()[i] << endl;
@@ -129,22 +112,25 @@ void ofApp::update() {
 		xSize = 0.25;
 	}
 	box.setWidth(xSize);
+	human.update();
 }
 
 //--------------------------------------------------------------
 void ofApp::draw() {
-	/*
-	ofColor centerColor = ofColor(85, 78, 68);
-	ofColor edgeColor(0, 0, 0);
-	ofBackgroundGradient(centerColor, edgeColor, OF_GRADIENT_CIRCULAR);
 
-	easyCam.begin();
-	ofPushMatrix();
-	ofTranslate(-ofGetWidth() / 2, -ofGetHeight() / 2);
-	mesh.draw();
-	ofPopMatrix();
-	easyCam.end();
-	*/
+	tempCageMesh.clear();
+	tempCageMesh.addVertices(human.getCageVertices().get(), human.getCageVerticesNum());
+	for (size_t i = 0; i < human.getCageVerticesNum(); i++)
+	{
+		tempCageMesh.addColor(ofFloatColor(0, 0, 255));
+	}
+
+	testMesh.clear();
+	testMesh.addVertices(human.getModelVertices().get(), human.getModelVerticesNum());
+	for (size_t i = 0; i < human.getModelVerticesNum(); i++)
+	{
+		testMesh.addColor(ofFloatColor(255, 0, 0));
+	}
 
 	if (toggleLock)
 	{
